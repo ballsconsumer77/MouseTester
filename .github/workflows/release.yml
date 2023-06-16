@@ -12,7 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          ref: release
+          ref: update
+
+      - name: Create "release" branch
+        run: |
+          git branch release
+          git checkout release
 
       - name: Set up MSVC environment
         uses: microsoft/setup-msbuild@v1
@@ -37,3 +42,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           files: MouseTester.zip
+
+      - name: Delete "release" branch
+        run: |
+          git checkout master
+          git branch -D release
