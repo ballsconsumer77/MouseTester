@@ -28,6 +28,8 @@ namespace MouseTester
         double y_max;
         private string xlabel = "";
         private string ylabel = "";
+        private double firstPercentileMetric = 99;
+        private double secondPercentileMetric = 99.9;
 
         public MousePlot(MouseLog Mlog)
         {
@@ -149,6 +151,9 @@ namespace MouseTester
                 StrokeThickness = 1.0
             };
 
+            // Only display statistics when "Interval" or "Frequency" is selected
+            statisticsGroupBox.Visible = comboBoxPlotType.Text.Contains("Interval") || comboBoxPlotType.Text.Contains("Frequency");
+
             if (comboBoxPlotType.Text.Contains("xyCount"))
             {
                 plot_xycounts_vs_time(scatterSeries1, scatterSeries2, stemSeries1, stemSeries2, lineSeries1, lineSeries2);
@@ -198,9 +203,9 @@ namespace MouseTester
                 }
 
             }
-            else if (comboBoxPlotType.Text.Contains("Interval"))
+            else if (comboBoxPlotType.Text.Contains("Interval") || comboBoxPlotType.Text.Contains("Frequency"))
             {
-                plot_interval_vs_time(scatterSeries1, stemSeries1, lineSeries1);
+                plot_interval_vs_time(scatterSeries1, stemSeries1, lineSeries1, comboBoxPlotType.Text.Contains("Interval"), (value) => comboBoxPlotType.Text.Contains("Interval") ? value : 1000 / value);
                 pm.Series.Add(scatterSeries1);
                 if (!checkBoxLines.Checked)
                 {
@@ -384,10 +389,11 @@ namespace MouseTester
             }
         }
 
-        private void plot_interval_vs_time(ScatterSeries scatterSeries1, StemSeries stemSeries1, LineSeries lineSeries1)
+        private void plot_interval_vs_time(ScatterSeries scatterSeries1, StemSeries stemSeries1, LineSeries lineSeries1, bool isInterval, Func<double, double> transformFunction)
         {
             xlabel = "Time (ms)";
-            ylabel = "Update Time (ms)";
+            ylabel = isInterval ? "Update Time (ms)" : "Frequency (Hz)";
+            List<double> intervals = new List<double>();
             reset_minmax();
             for (int i = last_start; i <= last_end; i++)
             {
@@ -401,11 +407,37 @@ namespace MouseTester
                 {
                     y = this.mlog.Events[i].ts - this.mlog.Events[i - 1].ts;
                 }
-                update_minmax(x, y);
-                scatterSeries1.Points.Add(new ScatterPoint(x, y));
-                lineSeries1.Points.Add(new DataPoint(x, y));
-                stemSeries1.Points.Add(new DataPoint(x, y));
+                intervals.Add(y);
+                update_minmax(x, transformFunction(y));
+                scatterSeries1.Points.Add(new ScatterPoint(x, transformFunction(y)));
+                lineSeries1.Points.Add(new DataPoint(x, transformFunction(y)));
+                stemSeries1.Points.Add(new DataPoint(x, transformFunction(y)));
             }
+
+            // Calculate statistics
+
+            intervals.Sort();
+            double sum = intervals.Sum();
+            int count = intervals.Count();
+            double average = transformFunction(sum / count);
+            double squared_deviations = 0.0;
+            int middle_index = count / 2;
+            int last_index = count - 1;
+            double range = intervals[last_index] - intervals[0];
+
+            foreach (double interval in intervals)
+            {
+                squared_deviations += Math.Pow(transformFunction(interval) - average, 2);
+            }
+
+            maxInterval.Text = $"{transformFunction(isInterval ? intervals[last_index] : intervals[0]):0.0000####}";
+            minInterval.Text = $"{transformFunction(isInterval ? intervals[0] : intervals[last_index]):0.0000####}";
+            avgInterval.Text = $"{average:0.0000####}";
+            stdevInterval.Text = $"{Math.Sqrt(squared_deviations / (last_index)):0.0000####}";
+            rangeInterval.Text = $"{(isInterval ? range : 1000 * range):0.0000####}";
+            medianInterval.Text = $"{(transformFunction(count % 2 == 1 ? intervals[middle_index] : (intervals[middle_index - 1] + intervals[middle_index]) / 2)):0.0000####}";
+            firstPercentileInterval.Text = $"{transformFunction(intervals[(int) Math.Ceiling(firstPercentileMetric / 100 * count) - 1]):0.0000####}";
+            secondPercentileInterval.Text = $"{transformFunction(intervals[(int)Math.Ceiling(secondPercentileMetric / 100 * count) - 1]):0.0000####}";
         }
 
         private void plot_xvelocity_vs_time(ScatterSeries scatterSeries1, StemSeries stemSeries1, LineSeries lineSeries1)
@@ -658,6 +690,32 @@ namespace MouseTester
                     bm.Save(fileName, ImageFormat.Png);
                 }
             }
+        }
+
+        private void firstPercentileMetricLabel_Click(object sender, EventArgs e)
+        {
+            NumericInputDialog dialog = new NumericInputDialog();
+            dialog.SetNumericValueText((decimal)firstPercentileMetric);
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                this.firstPercentileMetric = (double)dialog.value;
+            }
+            refresh_plot();
+            firstPercentileMetricLabel.Text = $"{firstPercentileMetric:0.###} Percentile";
+        }
+
+        private void secondPercentileMetricLabel_Click(object sender, EventArgs e)
+        {
+            NumericInputDialog dialog = new NumericInputDialog();
+            dialog.SetNumericValueText((decimal)secondPercentileMetric);
+            dialog.Text = secondPercentileMetricLabel.Text;
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                this.secondPercentileMetric = (double)dialog.value;
+            }
+            refresh_plot();
+            secondPercentileMetricLabel.Text = $"{secondPercentileMetric:0.###} Percentile";
         }
     }
 }
