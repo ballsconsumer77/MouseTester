@@ -31,6 +31,7 @@ namespace MouseTester
 
         public MousePlot(MouseLog Mlog)
         {
+            this.Text = $"MousePlot v{Program.version}";
             InitializeComponent();
             this.mlog = new MouseLog();
             this.mlog.Desc = Mlog.Desc;
@@ -73,6 +74,9 @@ namespace MouseTester
 
             this.checkBoxLines.Checked = false;
             this.checkBoxLines.CheckedChanged += new System.EventHandler(this.checkBoxLines_CheckedChanged);
+
+            // open MousePlot to "Interval vs. Time" selection
+            comboBoxPlotType.SelectedItem = "Interval vs. Time";
 
             refresh_plot();
         }
