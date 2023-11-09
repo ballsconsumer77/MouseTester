@@ -52,7 +52,7 @@ namespace MouseTester
             }
             this.mlog.Add(new MouseEvent(buttonflags, x, y, ts));
 
-            this.last_start = 0;
+            this.last_start = 100;
             this.last_end = this.mlog.Events.Count - 1;
             initialize_plot();
 
@@ -401,15 +401,15 @@ namespace MouseTester
             if (isInterval) {
                 ylabel = "Update Time (ms)";
                 firstPercentileMetric = 99;
-                firstPercentileMetricLabel.Text = "99 Percentile";
+                firstPercentileMetricLabel.Text = "99 Percentile:";
                 secondPercentileMetric = 99.9;
-                secondPercentileMetricLabel.Text = "99.9 Percentile";
+                secondPercentileMetricLabel.Text = "99.9 Percentile:";
             } else {
                 ylabel = "Frequency (Hz)";
                 firstPercentileMetric = 1;
-                firstPercentileMetricLabel.Text = "1 Percentile";
+                firstPercentileMetricLabel.Text = "1 Percentile:";
                 secondPercentileMetric = 0.1;
-                secondPercentileMetricLabel.Text = "0.1 Percentile";
+                secondPercentileMetricLabel.Text = "0.1 Percentile:";
             }
 
             List<double> intervals = new List<double>();
@@ -450,12 +450,14 @@ namespace MouseTester
             {
                 squared_deviations += Math.Pow(transformFunction(interval) - average, 2);
             }
+            double maximumValue = transformFunction(isInterval ? intervals_descending[0] : intervals_descending[last_index]);
+            double minimumValue = transformFunction(isInterval ? intervals_descending[last_index] : intervals_descending[0]);
 
-            maxInterval.Text = $"{transformFunction(isInterval ? intervals_descending[0] : intervals_descending[last_index]):0.0000####}";
-            minInterval.Text = $"{transformFunction(isInterval ? intervals_descending[last_index]: intervals_descending[0]):0.0000####}";
+            maxInterval.Text = $"{maximumValue:0.0000####}";
+            minInterval.Text = $"{minimumValue:0.0000####}";
             avgInterval.Text = $"{average:0.0000####}";
             stdevInterval.Text = $"{Math.Sqrt(squared_deviations / (last_index)):0.0000####}";
-            rangeInterval.Text = $"{(isInterval ? range : 1000 * range):0.0000####}";
+            rangeInterval.Text = $"{maximumValue - minimumValue:0.0000####}";
             medianInterval.Text = $"{(transformFunction(count % 2 == 1 ? intervals_descending[middle_index] : (intervals_descending[middle_index - 1] + intervals_descending[middle_index]) / 2)):0.0000####}";
 
             List<double> percentiles_list = isInterval ? intervals_ascending : intervals_descending;
