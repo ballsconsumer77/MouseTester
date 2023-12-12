@@ -7,7 +7,7 @@ namespace MouseTester
 {
     static class Program
     {
-        public static string version = "1.4.7";
+        public static string version = "1.6.0";
 
         /// <summary>
         /// The main entry point for the application.
