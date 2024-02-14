@@ -1,8 +1,11 @@
 name: Create release
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the program to build. This will be used for the tag and release name."
+        required: true
 
 jobs:
   build:
@@ -22,7 +25,10 @@ jobs:
         run: |
           MSBuild.exe .\MouseTester\MouseTester.sln -p:Configuration=Release -p:Platform=x64
 
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
+      - name: Create release
+        uses: ncipollo/release-action@v1
         with:
-          files: ./MouseTester/MouseTester/bin/x64/Release/MouseTester.exe
+          tag: MouseTester_v${{ inputs.version }}
+          name: MouseTester_v${{ inputs.version }}
+          artifacts: ./MouseTester/MouseTester/bin/x64/Release/MouseTester.exe
+          generateReleaseNotes: true
