@@ -7,6 +7,12 @@ on:
         description: "Version of the program to build. This will be used for the tag and release name."
         required: true
 
+      pre-release:
+        description: "Pre-release"
+        required: true
+        default: false
+        type: boolean
+
 permissions:
   contents: write
 
@@ -33,5 +39,6 @@ jobs:
         with:
           tag: MouseTester_v${{ inputs.version }}
           name: MouseTester_v${{ inputs.version }}
+          prerelease: ${{ inputs.pre-release }}
           artifacts: ./MouseTester/MouseTester/bin/x64/Release/MouseTester.exe
           generateReleaseNotes: true
